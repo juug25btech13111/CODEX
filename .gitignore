@@ -1,0 +1,15 @@
+__pycache__/
+.env
+.pytest_cache/
+uploads/
+*.sqlite
+*.sqlite3
+instance/
+test_out.pdf
+*.log
+custom_model/
+training_status.json
+venv/
+.venv/
+backups/
+migrations/
