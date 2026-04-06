@@ -1,4 +1,4 @@
-const chartConfig = {
+﻿const chartConfig = {
     // Colors matching our Tailwind theme with vibrant gradient-like values
     colors: {
         positive: '#10b981', // Emerald-500
@@ -156,5 +156,5 @@ document.getElementById('theme-toggle')?.addEventListener('click', () => {
             }
             chart.update();
         }
-    }, 100);
+    }, 150);
 });
