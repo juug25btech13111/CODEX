@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Create User - NeuroSent Admin{% endblock %}
+
+{% block extra_head %}
+<!-- Page specific head elements -->
+{% endblock %}
+
+{% block content %}
+<!-- Vanta.js Background Container. Use absolute positioning to fill screen without disrupting flow -->
+<div id="vanta-bg" class="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 mix-blend-screen transition-opacity duration-1000"></div>
+
+<div class="relative z-10 max-w-2xl mx-auto pt-4 animate-fade-in">
+    <div class="mb-8 text-center">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400 tracking-tight drop-shadow-sm">System Administration</h1>
+        <p class="text-gray-600 dark:text-gray-300 font-medium text-sm mt-2">Provision new staff, faculty, or student accounts securely.</p>
+    </div>
+
+    <!-- Stunning Glass Card over 3D background -->
+    <div class="glass rounded-3xl shadow-2xl p-8 sm:p-10 border border-white/40 dark:border-gray-700/60 backdrop-blur-2xl relative overflow-hidden transition-all hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
+        
+        <!-- Subtle internal glowing orb -->
+        <div class="absolute -top-20 -right-20 w-56 h-56 bg-primary-400/20 dark:bg-primary-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <form method="POST" action="{{ url_for('admin.create_user') }}" class="relative z-10 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="name" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Full Name</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary-500">
+                            <i class="fa-solid fa-id-badge"></i>
+                        </div>
+                        <input type="text" name="name" id="name" class="bg-white/70 border border-gray-300/50 text-gray-900 rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-800/70 dark:border-gray-600/50 dark:placeholder-gray-400 dark:text-white shadow-inner transition-all focus:bg-white dark:focus:bg-gray-900" placeholder="Jane Doe" required>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="email" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Email Address</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary-500">
+                            <i class="fa-solid fa-at"></i>
+                        </div>
+                        <input type="email" name="email" id="email" class="bg-white/70 border border-gray-300/50 text-gray-900 rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-800/70 dark:border-gray-600/50 dark:placeholder-gray-400 dark:text-white shadow-inner transition-all focus:bg-white dark:focus:bg-gray-900" placeholder="jane@institution.edu" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-2">
+                    <label for="password" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Secure Password</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary-500">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <input type="text" name="password" id="password" class="bg-white/70 border border-gray-300/50 text-gray-900 rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-800/70 dark:border-gray-600/50 dark:placeholder-gray-400 dark:text-white shadow-inner transition-all focus:bg-white dark:focus:bg-gray-900 font-mono tracking-widest" value="{{ range(10000000, 99999999) | random | string }}" required>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 italic">Auto-generated password provided. Edit if necessary.</p>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="role" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Account Role</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary-500 z-10">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <select name="role" id="role" class="bg-white/70 border border-gray-300/50 text-gray-900 rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-800/70 dark:border-gray-600/50 dark:placeholder-gray-400 dark:text-white shadow-inner transition-all focus:bg-white dark:focus:bg-gray-900 appearance-none relative pr-10 cursor-pointer" required>
+                            <option value="Student">Student (Default)</option>
+                            <option value="Staff">Staff</option>
+                            <option value="HOD">Head of Department (HOD)</option>
+                            <option value="Admin">Administrator</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 dark:text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-sm"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <label for="department" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Assigned Department <span class="text-gray-500 dark:text-gray-400 font-normal lowercase">(Optional for Students)</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-primary-500">
+                        <i class="fa-solid fa-building-user"></i>
+                    </div>
+                    <input type="text" name="department" id="department" class="bg-white/70 border border-gray-300/50 text-gray-900 rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-800/70 dark:border-gray-600/50 dark:placeholder-gray-400 dark:text-white shadow-inner transition-all focus:bg-white dark:focus:bg-gray-900" placeholder="e.g. Computer Science, Human Resources">
+                </div>
+            </div>
+            
+            <div class="pt-6">
+                <button type="submit" class="w-full text-white bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-extrabold text-base rounded-xl px-5 py-4 text-center dark:focus:ring-primary-800 shadow-xl hover:shadow-2xl transform transition-all hover:-translate-y-1 flex justify-center items-center gap-3 border border-white/20">
+                    <i class="fa-solid fa-user-plus text-xl"></i> Create Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Local scripts for Admin Create User page can go here ->
+{% endblock %}

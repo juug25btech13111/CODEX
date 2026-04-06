@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Manage Users - NeuroSent Admin{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<style>
+    /* Glassmorphism overrides for DataTables */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter,
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_processing,
+    .dataTables_wrapper .dataTables_paginate {
+        color: inherit;
+        padding: 1rem;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        border-radius: 0.5rem;
+        color: inherit !important;
+    }
+
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+        background: rgba(99, 102, 241, 0.2);
+        border: 1px solid rgba(99, 102, 241, 0.5);
+        color: inherit !important;
+    }
+</style>
+<div class="relative z-10 max-w-6xl mx-auto pt-4 animate-fade-in">
+    <div class="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1
+                class="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-indigo-600 dark:from-primary-400 dark:to-indigo-400 tracking-tight drop-shadow-sm">
+                Manage Personnel</h1>
+            <p class="text-gray-600 dark:text-gray-300 font-medium text-sm mt-2">View, reset passwords, or delete
+                registered user accounts.</p>
+        </div>
+        <a href="{{ url_for('admin.create_user') }}"
+            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 text-white text-sm font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:-translate-y-0.5">
+            <i class="fa-solid fa-plus mr-2"></i> Add New User
+        </a>
+    </div>
+
+    <!-- Stunning Glass Container -->
+    <div
+        class="glass rounded-3xl shadow-xl border border-white/40 dark:border-gray-700/60 backdrop-blur-2xl relative overflow-hidden transition-all">
+        <!-- Subtle internal glowing orb -->
+        <div
+            class="absolute -bottom-20 -left-20 w-64 h-64 bg-primary-400/20 dark:bg-primary-500/10 rounded-full blur-3xl pointer-events-none">
+        </div>
+
+        <div class="w-full relative z-10">
+            <table id="usersTable" class="w-full text-sm text-left text-gray-700 dark:text-gray-300">
+                <thead
+                    class="text-xs text-gray-800 uppercase bg-primary-50/50 dark:bg-gray-800/80 dark:text-gray-300 border-b border-gray-200/50 dark:border-gray-700/50 backdrop-blur-md">
+                    <tr>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">User</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Role</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Department</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-4 font-bold tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                    {% for user in users %}
+                    <tr
+                        class="bg-white/40 dark:bg-gray-800/30 hover:bg-white/60 dark:hover:bg-gray-800/60 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div
+                                    class="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/40 dark:to-indigo-900/40 text-primary-600 dark:text-primary-400 font-bold border border-white/50 dark:border-gray-700 shadow-inner">
+                                    {{ user.name[0] | upper }}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-bold text-gray-900 dark:text-white">{{ user.name }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400 font-medium">{{ user.email }}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span
+                                class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold {% if user.role == 'Admin' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50{% elif user.role == 'HOD' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 border border-orange-200 dark:border-orange-800/50{% elif user.role == 'Staff' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50{% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border border-green-200 dark:border-green-800/50{% endif %}">
+                                {{ user.role }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            {% if user.department %}
+                            {{ user.department }}
+                            {% else %}
+                            <span class="text-gray-400 dark:text-gray-500 italic">None</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center text-xs font-bold text-green-600 dark:text-green-400">
+                                <span class="w-2 h-2 mr-1.5 bg-green-500 rounded-full animate-pulse"></span> Active
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div class="flex items-center justify-end space-x-3">
+                                <!-- Reset Password Form -->
+                                <form action="{{ url_for('admin.reset_password', user_id=user.id) }}" method="POST"
+                                    onsubmit="return handlePasswordReset(event, '{{ user.email }}', this);">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <input type="hidden" name="new_password" class="new_password_input">
+                                    <button type="submit"
+                                        class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/40 p-2 rounded-lg transition-colors"
+                                        title="Change / Reset Password">
+                                        <i class="fa-solid fa-key"></i>
+                                    </button>
+                                </form>
+
+                                <!-- Delete User Form -->
+                                {% if user.id != current_user.id %}
+                                <form action="{{ url_for('admin.delete_user', user_id=user.id) }}" method="POST"
+                                    onsubmit="return confirm('Are you strictly sure you want to permanently delete the account for {{ user.name }} ({{ user.role }})? This action cannot be undone.');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <button type="submit"
+                                        class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 p-2 rounded-lg transition-colors"
+                                        title="Delete User">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </form>
+                                {% else %}
+                                <button type="button"
+                                    class="text-gray-300 dark:text-gray-600 p-2 rounded-lg cursor-not-allowed"
+                                    title="Cannot delete yourself">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <i class="fa-solid fa-user-slash text-4xl mb-3 opacity-50"></i>
+                            <p>No other users found in the system.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#usersTable').DataTable({
+            "pageLength": 10,
+            "language": {
+                "search": "Search Personnel:",
+                "lengthMenu": "Show _MENU_ users per page"
+            }
+        });
+    });
+
+    function handlePasswordReset(event, email, form) {
+        event.preventDefault();
+        let newPass = prompt(`Enter new custom password for:\n${email}\n\n[Leave this blank and press OK to auto-generate a random 8-character password]`);
+
+        if (newPass === null) {
+            // User pressed Cancel
+            return false;
+        }
+
+        form.querySelector('.new_password_input').value = newPass;
+        form.submit();
+    }
+</script>
+{% endblock %}

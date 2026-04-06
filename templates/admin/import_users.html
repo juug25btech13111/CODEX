@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Import Users - NeuroSent Admin{% endblock %}
+
+{% block content %}
+<div id="vanta-bg" class="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 mix-blend-screen transition-opacity duration-1000"></div>
+
+<div class="relative z-10 max-w-2xl mx-auto pt-4 animate-fade-in">
+    <div class="mb-8 text-center">
+        <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-400 dark:to-blue-400 tracking-tight drop-shadow-sm">Bulk User Import</h1>
+        <p class="text-gray-600 dark:text-gray-300 font-medium text-sm mt-2">Import multiple user accounts at once via CSV file.</p>
+    </div>
+
+    <div class="glass rounded-3xl shadow-2xl p-8 sm:p-10 border border-white/40 dark:border-gray-700/60 backdrop-blur-2xl relative overflow-hidden transition-all hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]">
+        
+        <div class="absolute -top-20 -right-20 w-56 h-56 bg-cyan-400/20 dark:bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- CSV Format Instructions -->
+        <div class="relative z-10 mb-8">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+                    <i class="fa-solid fa-table-list text-lg"></i>
+                </div>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-white">CSV Format Requirements</h2>
+            </div>
+            <div class="bg-gray-50/80 dark:bg-gray-800/60 rounded-xl p-5 border border-gray-200/50 dark:border-gray-700/50">
+                <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Your CSV file must contain these <strong>4 required columns</strong> <span class="italic text-xs text-gray-500">(headers are auto-mapped, so variations like "Full Name" or "Email Address" are supported)</span>:</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0"></span>
+                        <span class="text-gray-700 dark:text-gray-200"><code class="bg-gray-200/70 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-mono">name</code> — Full Name</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></span>
+                        <span class="text-gray-700 dark:text-gray-200"><code class="bg-gray-200/70 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-mono">email</code> — Email Address</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0"></span>
+                        <span class="text-gray-700 dark:text-gray-200"><code class="bg-gray-200/70 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-mono">role</code> — Admin/HOD/Staff/Student</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0"></span>
+                        <span class="text-gray-700 dark:text-gray-200"><code class="bg-gray-200/70 dark:bg-gray-700 px-1.5 py-0.5 rounded text-xs font-mono">department</code> — Department</span>
+                    </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-gray-200/50 dark:border-gray-700/50 flex items-center justify-between">
+                    <p class="text-xs text-gray-500 dark:text-gray-400"><i class="fa-solid fa-shield-halved text-emerald-500 mr-1"></i>Strong passwords are auto-generated for each user.</p>
+                    <a href="{{ url_for('admin.sample_csv') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-cyan-600 dark:text-cyan-400 hover:text-cyan-700 dark:hover:text-cyan-300 transition-colors">
+                        <i class="fa-solid fa-download"></i> Download Template
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Form -->
+        <form method="POST" action="{{ url_for('admin.import_users') }}" enctype="multipart/form-data" class="relative z-10 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="space-y-2">
+                <label for="csv_file" class="block text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">Select CSV File</label>
+                <div class="relative">
+                    <input type="file" name="csv_file" id="csv_file" accept=".csv" required
+                        class="block w-full text-sm text-gray-600 dark:text-gray-300
+                            file:mr-4 file:py-3 file:px-5
+                            file:rounded-xl file:border-0
+                            file:text-sm file:font-bold
+                            file:bg-cyan-50 file:text-cyan-700
+                            dark:file:bg-cyan-900/30 dark:file:text-cyan-300
+                            file:cursor-pointer file:transition-all
+                            file:hover:bg-cyan-100 dark:file:hover:bg-cyan-800/40
+                            bg-white/70 dark:bg-gray-800/70 border border-gray-300/50 dark:border-gray-600/50
+                            rounded-xl p-2.5 shadow-inner transition-all
+                            focus:ring-cyan-500 focus:border-cyan-500">
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 italic">Accepted format: .csv (UTF-8 encoded, max 500 rows)</p>
+            </div>
+
+            <div class="pt-4">
+                <button type="submit" class="w-full text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 focus:ring-4 focus:outline-none focus:ring-cyan-300 font-extrabold text-base rounded-xl px-5 py-4 text-center dark:focus:ring-cyan-800 shadow-xl hover:shadow-2xl transform transition-all hover:-translate-y-1 flex justify-center items-center gap-3 border border-white/20">
+                    <i class="fa-solid fa-file-import text-xl"></i> Import Users
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
