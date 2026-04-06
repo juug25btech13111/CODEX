@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Verify Email - NeuroSent{% endblock %}
+
+{% block unauth_content %}
+<div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+        <div class="text-center">
+            <div class="w-20 h-20 mx-auto mb-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                <i class="fa-solid fa-envelope-circle-check text-3xl text-indigo-600 dark:text-indigo-400"></i>
+            </div>
+            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white">Verify Your Email</h2>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                We've sent a 6-digit verification code to <strong class="text-indigo-600 dark:text-indigo-400">{{ email }}</strong>
+            </p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.verify_email') }}" class="mt-8 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div>
+                <label for="otp" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Verification Code</label>
+                <input type="text" id="otp" name="otp" maxlength="6" pattern="[0-9]{6}" required
+                    class="appearance-none rounded-xl relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-600 placeholder-gray-400 text-gray-900 dark:text-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center text-2xl tracking-[0.5em] font-bold"
+                    placeholder="000000" autocomplete="one-time-code">
+            </div>
+
+            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg transition-all">
+                <i class="fa-solid fa-check-circle mr-2"></i> Verify Email
+            </button>
+        </form>
+
+        <div class="text-center space-y-3">
+            <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> Resend verification code
+                </button>
+            </form>
+            <a href="{{ url_for('auth.login') }}" class="block text-sm text-gray-500 dark:text-gray-400 hover:underline">
+                <i class="fa-solid fa-arrow-left mr-1"></i> Back to Login
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

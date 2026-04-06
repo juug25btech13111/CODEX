@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Login - NeuroSent{% endblock %}
+
+{% block unauth_content %}
+<!-- Full-screen Reliable Particles Background -->
+<div id="particles-js" class="fixed inset-0 z-0 bg-gray-900"></div>
+
+<div class="flex items-center justify-center min-h-[80vh] px-4 animate-fade-in relative z-10">
+    <div class="w-full max-w-md p-8 sm:p-10 glass rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-2xl border border-white/30 dark:border-gray-700/60 transition-all hover:shadow-[0_0_40px_rgba(59,130,246,0.3)]">
+        
+        <!-- Decorative gradient orb -->
+        <div class="absolute -top-16 -right-16 w-40 h-40 bg-primary-500/20 rounded-full blur-3xl pointer-events-none transform animate-pulse transition-all"></div>
+        <div class="absolute -bottom-16 -left-16 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none transform animate-pulse animation-delay-2000 transition-all"></div>
+
+        <div class="relative z-10 text-center mb-8">
+            <a href="#" class="inline-flex items-center space-x-3 text-4xl font-extrabold text-gradient mb-3 tracking-tight">
+                <i class="fa-solid fa-brain"></i>
+                <span>NeuroSent</span>
+            </a>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">AI-Based Sentiment Analysis Platform</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}" class="relative z-10 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div>
+                <label for="email" class="block mb-2 text-sm font-semibold text-gray-900 dark:text-gray-300">Your email</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fa-solid fa-envelope text-primary-400"></i>
+                    </div>
+                    <input type="email" name="email" id="email" class="bg-white/60 border border-gray-300/50 text-gray-900 sm:text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-700/60 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white shadow-sm transition-all focus:bg-white dark:focus:bg-gray-800" placeholder="name@company.com" required="">
+                </div>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="password" class="block text-sm font-semibold text-gray-900 dark:text-gray-300">Password</label>
+                    <a href="{{ url_for('recovery.forgot_password') }}" class="text-sm font-medium text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">Forgot password?</a>
+                </div>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fa-solid fa-lock text-primary-400"></i>
+                    </div>
+                    <input type="password" name="password" id="password" placeholder="••••••••" class="bg-white/60 border border-gray-300/50 text-gray-900 sm:text-sm rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-700/60 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white shadow-sm transition-all focus:bg-white dark:focus:bg-gray-800" required="">
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full text-white bg-gradient-to-r from-primary-600 to-indigo-600 hover:from-primary-700 hover:to-indigo-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-bold rounded-xl text-sm px-5 py-3.5 text-center dark:focus:ring-primary-900 shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-0.5 mt-2">
+                Sign in to your account
+            </button>
+            <p class="text-sm font-medium text-center text-gray-600 dark:text-gray-400 mt-6">
+                Don't have an account yet? <a href="{{ url_for('auth.register') }}" class="font-bold text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">Sign up</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const isMobile = window.innerWidth < 768;
+        
+        particlesJS("particles-js", {
+            "particles": {
+                // Slashed particle count by 70%, and cut it in half again for phones to guarantee zero lag on 1GB RAM devices
+                "number": { "value": isMobile ? 15 : 35, "density": { "enable": true, "value_area": 800 } },
+                "color": { "value": "#60a5fa" }, // primary-400
+                "shape": { "type": "circle" },
+                "opacity": {
+                    "value": 0.4,
+                    // Disabled expensive random opacity math to save CPU cycles
+                    "random": false,
+                    "anim": { "enable": false }
+                },
+                "size": {
+                    "value": 3,
+                    "random": true,
+                    "anim": { "enable": false }
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#3b82f6", // primary-500
+                    "opacity": 0.3,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    // Lowered speed saves rendering recalculation frames
+                    "speed": 1.5,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": false,
+                    "attract": { "enable": false }
+                }
+            },
+            "interactivity": {
+                // Canvas mode is faster than Window mode detection
+                "detect_on": "canvas",
+                "events": {
+                    // Disabled hover calculations which destroy CPU performance on low-end laptops
+                    "onhover": { "enable": false },
+                    // Click ripple effect is cheap to maintain but looks premium
+                    "onclick": { "enable": true, "mode": "push" },
+                    // Only react to legitimate window resize events
+                    "resize": true
+                },
+                "modes": {
+                    "push": { "particles_nb": 2 }
+                }
+            },
+            // Native resolution rendering looks sharp without crushing memory
+            "retina_detect": true
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Verify OTP - NeuroSent{% endblock %}
+
+{% block unauth_content %}
+<div class="flex items-center justify-center min-h-[80vh] px-4 animate-fade-in relative z-10">
+    <div class="w-full max-w-md p-8 sm:p-10 glass rounded-3xl shadow-2xl relative overflow-hidden backdrop-blur-xl border border-white/20 dark:border-gray-700/50">
+        
+        <div class="absolute -bottom-16 -right-16 w-40 h-40 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none transform animate-pulse transition-all"></div>
+        <div class="absolute -top-16 -left-16 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl pointer-events-none transform animate-pulse animation-delay-2000 transition-all"></div>
+
+        <div class="relative z-10 text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight">Enter OTP</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">We've sent a 6-digit code to your email. It expires in 10 minutes.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('recovery.verify_otp') }}" class="relative z-10 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <div>
+                <label for="otp" class="block mb-2 text-sm font-semibold text-gray-900 dark:text-gray-300">6-Digit Code</label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        <i class="fa-solid fa-key text-primary-400"></i>
+                    </div>
+                    <input type="text" name="otp" id="otp" class="bg-white/60 border border-gray-300/50 text-gray-900 sm:text-xl text-center tracking-[0.5em] font-mono rounded-xl focus:ring-primary-500 focus:border-primary-500 block w-full pl-11 p-3.5 dark:bg-gray-700/60 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white shadow-sm transition-all focus:bg-white dark:focus:bg-gray-800" placeholder="000000" maxlength="6" pattern="[0-9]{6}" required="" autocomplete="one-time-code">
+                </div>
+            </div>
+            
+            <button type="submit" class="w-full text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:ring-4 focus:outline-none focus:ring-purple-300 font-bold rounded-xl text-sm px-5 py-3.5 text-center dark:focus:ring-purple-900 shadow-lg hover:shadow-xl transform transition-all hover:-translate-y-0.5 mt-2">
+                <i class="fa-solid fa-check-circle mr-2"></i> Verify Code
+            </button>
+            
+            <p class="text-sm font-medium text-center text-gray-600 dark:text-gray-400 mt-6">
+                Didn't receive it? <a href="{{ url_for('recovery.forgot_password') }}" class="font-bold text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 transition-colors">Resend OTP</a>
+            </p>
+        </form>
+    </div>
+</div>
+{% endblock %}
