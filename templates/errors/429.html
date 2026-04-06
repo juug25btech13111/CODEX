@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>429 - Too Many Requests | NeuroSent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || !('color-theme' in localStorage)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4">
+    <div class="text-center max-w-md mx-auto">
+        <div class="w-24 h-24 mx-auto mb-6 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-hourglass-half text-4xl text-amber-600 dark:text-amber-400"></i>
+        </div>
+        <h1 class="text-6xl font-extrabold text-gray-900 dark:text-white mb-2">429</h1>
+        <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Too Many Requests</h2>
+        <p class="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+            You've exceeded the allowed number of requests. Please wait a moment before trying again.
+            This limit exists to protect the system from abuse.
+        </p>
+        <div id="countdown" class="mb-6 text-2xl font-mono font-bold text-amber-600 dark:text-amber-400">
+            Retry in <span id="timer">30</span>s
+        </div>
+        <a href="/" class="inline-flex items-center px-6 py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors shadow-lg">
+            <i class="fa-solid fa-home mr-2"></i> Return Home
+        </a>
+    </div>
+
+    <script>
+        let seconds = 30;
+        const timerEl = document.getElementById('timer');
+        const interval = setInterval(() => {
+            seconds--;
+            timerEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(interval);
+                document.getElementById('countdown').innerHTML = '<span class="text-green-500">You may try again now.</span>';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
