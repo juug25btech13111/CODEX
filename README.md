@@ -38,11 +38,46 @@ CODEX/
 ```
 
 ## Quick Start
+
 ```bash
+# 1. Navigate to the project directory
 cd project
+
+# 2. Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+# source venv/bin/activate   # macOS/Linux
+
+# 3. Install dependencies
 pip install -r requirements.txt
+
+# 4. Set up environment variables
+copy .env.example .env
+# Edit .env with your actual values:
+#   - SECRET_KEY (generate a random key)
+#   - MAIL_USERNAME / MAIL_PASSWORD (Gmail App Password)
+#   - OPENROUTER_API_KEY (from https://openrouter.ai/keys)
+
+# 5. Run the application
 python app.py
 ```
+
+The app will be available at **http://localhost:8080**
+
+## Default Admin Credentials
+
+After running the app, create the admin account by running:
+```bash
+python create_admin.py
+```
+
+| Field    | Value                        |
+|----------|------------------------------|
+| Email    | `mathasenquiry@gmail.com`    |
+| Password | `Admin@2026`                 |
+| Role     | Admin                        |
+
+> **Note:** You can create additional users (HOD, Staff, Student) from the Admin dashboard after logging in.
 
 ## Team
 Built during the college hackathon, April 2026.
