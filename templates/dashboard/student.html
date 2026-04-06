@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}My Feedback - NeuroSent{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end animate-fade-in">
+    <div>
+        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">My Submissions</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">History of your submitted feedback and its AI analysis.</p>
+    </div>
+    <div class="mt-4 md:mt-0">
+        <a href="{{ url_for('feedback.submit') }}" class="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:from-primary-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg transform hover:-translate-y-0.5 inline-flex items-center">
+            <i class="fa-solid fa-plus mr-2"></i> New Feedback
+        </a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="flex space-x-6 mb-8 animate-fade-in animation-delay-100">
+    <div class="glass px-6 py-5 rounded-2xl shadow-sm hover-card border border-white/20 dark:border-gray-700/50 min-w-[200px]">
+        <div class="flex items-center space-x-4">
+            <div class="p-3 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-400">
+                <i class="fa-solid fa-file-lines text-2xl"></i>
+            </div>
+            <div>
+                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider block mb-1">Total Submitted</span>
+                <div class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_count }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/50 overflow-hidden animate-fade-in animation-delay-200">
+    <div class="px-6 py-5 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-gray-800/30 flex justify-between items-center backdrop-blur-md">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Submission History</h3>
+    </div>
+    {% if total_count > 0 %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+            <thead class="text-xs text-gray-500 uppercase bg-black/5 dark:bg-white/5 dark:text-gray-400 tracking-wider">
+                <tr>
+                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Date</th>
+                    <th scope="col" class="px-6 py-4 font-semibold w-1/2">Your Feedback</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">AI Sentiment</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                {% for item in recent_feedback %}
+                <tr class="hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150">
+                    <td class="px-6 py-4 whitespace-nowrap text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {{ item.created_at.strftime('%b %d, %Y %H:%M') }}
+                    </td>
+                    <td class="px-6 py-4 text-gray-800 dark:text-gray-200 leading-relaxed tracking-wide">
+                        {{ item.original_text }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ item.sentiment | sentiment_badge }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-16">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary-50 dark:bg-gray-800/50 mb-6 shadow-inner ring-4 ring-white/50 dark:ring-gray-700/50">
+            <i class="fa-solid fa-folder-open text-3xl text-primary-300 dark:text-gray-500 transform transition-transform hover:scale-110"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 tracking-tight">No feedback yet</h3>
+        <p class="text-gray-500 dark:text-gray-400 max-w-sm mx-auto">You haven't submitted any feedback manually. Start by sharing your thoughts.</p>
+        <div class="mt-8">
+            <a href="{{ url_for('feedback.submit') }}" class="inline-flex items-center px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-primary-600 to-indigo-600 rounded-xl hover:from-primary-700 hover:to-indigo-700 transition-all shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                Submit your first feedback <i class="fa-solid fa-arrow-right ml-2"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

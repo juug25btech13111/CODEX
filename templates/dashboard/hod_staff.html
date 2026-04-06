@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ current_user.role }} Dashboard - NeuroSent{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    renderSentimentPieChart('sentimentPieChart', {
+        positive: {{ positive|default(0) }},
+        negative: {{ negative|default(0) }},
+        neutral: {{ neutral|default(0) }}
+    });
+    
+    // Date Range Filter Logic
+    document.getElementById('applyDateFilter').addEventListener('click', function() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const btn = this;
+        
+        if(!startDate && !endDate) return;
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        fetch(`{{ url_for("dashboard.get_dashboard_data") }}?start_date=${startDate}&end_date=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                btn.innerHTML = '<i class="fa-solid fa-filter"></i> Apply';
+                if(data.success) {
+                    document.getElementById('statTotal').innerText = data.total_count;
+                    document.getElementById('statPos').innerText = data.positive;
+                    document.getElementById('statNeg').innerText = data.negative;
+                    document.getElementById('statNeu').innerText = data.neutral;
+                    
+                    document.getElementById('pctPos').innerText = data.pct_pos + '%';
+                    document.getElementById('pctNeg').innerText = data.pct_neg + '%';
+                    document.getElementById('pctNeu').innerText = data.pct_neu + '%';
+                    
+                    const pieChart = Chart.instances[0];
+                    if(pieChart) {
+                        pieChart.data.datasets[0].data = [data.positive, data.negative, data.neutral];
+                        pieChart.update();
+                    }
+                }
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-filter"></i> Apply';
+                console.error("Date filter error:", err);
+            });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end animate-fade-in">
+    <div>
+        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{{ current_user.department or 'Your' }} Department Dashboard</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">Viewing analytics for {{ current_user.department or 'your specific scope' }}.</p>
+    </div>
+    </div>
+    <div class="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 items-end">
+        <!-- Date Filter UI -->
+        <div class="flex items-center space-x-2 bg-white/20 dark:bg-gray-800/40 p-1.5 rounded-xl border border-white/20 dark:border-gray-700/50 backdrop-blur-md">
+            <input type="date" id="startDate" class="bg-transparent border-none text-xs text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer" title="Start Date">
+            <span class="text-gray-400 text-xs">to</span>
+            <input type="date" id="endDate" class="bg-transparent border-none text-xs text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer" title="End Date">
+            <button id="applyDateFilter" class="px-3 py-1.5 text-xs font-bold text-white bg-primary-500 hover:bg-primary-600 rounded-lg transition-colors shadow-sm">
+                <i class="fa-solid fa-filter"></i> Apply
+            </button>
+        </div>
+        <a href="{{ url_for('reports.download_pdf') }}" class="px-5 py-2.5 text-sm font-semibold text-primary-700 bg-primary-100/80 hover:bg-primary-200 dark:bg-primary-500/20 dark:text-primary-300 dark:hover:bg-primary-500/30 rounded-xl transition-all shadow-sm hover:shadow">
+            <i class="fa-solid fa-download mr-2"></i> Export Report
+        </a>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in animation-delay-100">
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+        <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400"><i class="fa-solid fa-filter text-2xl"></i></div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Total Feedback</p>
+                <h3 id="statTotal" class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+         <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-thumbs-up text-2xl"></i></div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Positive</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statPos" class="text-3xl font-bold text-gray-900 dark:text-white">{{ positive }}</h3>
+                    <span id="pctPos" class="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">{{ pct_pos }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+         <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400"><i class="fa-solid fa-thumbs-down text-2xl"></i></div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Negative</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statNeg" class="text-3xl font-bold text-gray-900 dark:text-white">{{ negative }}</h3>
+                    <span id="pctNeg" class="text-sm font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{{ pct_neg }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+         <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400"><i class="fa-solid fa-minus text-2xl"></i></div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Neutral</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statNeu" class="text-3xl font-bold text-gray-900 dark:text-white">{{ neutral }}</h3>
+                    <span id="pctNeu" class="text-sm font-bold text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">{{ pct_neu }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-fade-in animation-delay-200">
+    <div class="glass rounded-2xl shadow-sm p-6 lg:col-span-1 border border-white/20 dark:border-gray-700/50">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Sentiment Distribution</h3>
+        <div class="relative h-64">
+            {% if total_count > 0 %}
+            <canvas id="sentimentPieChart"></canvas>
+            {% else %}
+            <div class="flex h-full items-center justify-center text-gray-400 italic">No data available</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 lg:col-span-2 border border-white/20 dark:border-gray-700/50 flex flex-col">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Recent Comments</h3>
+        <div class="flex-1 overflow-y-auto pr-2 space-y-4">
+            {% for item in recent_feedback %}
+            <div class="p-5 rounded-xl bg-white/40 dark:bg-gray-800/40 border border-gray-100/50 dark:border-gray-600/30 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex justify-between items-start mb-3">
+                    <div class="flex items-center space-x-3">
+                        {{ item.sentiment | sentiment_badge }}
+                        <span class="text-xs font-medium text-gray-500">{{ item.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                    </div>
+                </div>
+                <p class="text-gray-800 dark:text-gray-200 text-sm leading-relaxed tracking-wide">"{{ item.original_text }}"</p>
+            </div>
+            {% else %}
+            <div class="flex h-full items-center justify-center py-8">
+                <p class="text-gray-500 italic">No feedback recorded yet in this department.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

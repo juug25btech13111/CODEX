@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - NeuroSent{% endblock %}
+
+{% block extra_scripts %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<style>
+/* Glassmorphism overrides for DataTables */
+.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter, .dataTables_wrapper .dataTables_info, .dataTables_wrapper .dataTables_processing, .dataTables_wrapper .dataTables_paginate {
+    color: inherit;
+    padding: 1rem;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 0.5rem;
+    color: inherit !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    color: inherit !important;
+}
+table.dataTable.no-footer {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+</style>
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    renderSentimentPieChart('sentimentPieChart', {
+        positive: {{ positive|default(0) }},
+        negative: {{ negative|default(0) }},
+        neutral: {{ neutral|default(0) }}
+    });
+    
+    // Process department dictionary to arrays
+    const deptLabels = [];
+    const deptData = [];
+    {% for dept, count in dept_distribution.items() %}
+        deptLabels.push("{{ dept|default('Uncategorized', true) }}");
+        deptData.push({{ count }});
+    {% endfor %}
+    
+    renderDepartmentBarChart('deptBarChart', deptLabels, deptData);
+    
+    // Initialize DataTable
+    $('#recentFeedbackTable').DataTable({
+        "pageLength": 5,
+        "lengthMenu": [5, 10, 25, 50],
+        "language": {
+            "search": "Filter Feedback:",
+            "info": "Showing _START_ to _END_ of _TOTAL_ entries"
+        }
+    });
+    
+    // Fetch and render asynchronous Word Cloud
+    fetch('{{ url_for("dashboard.get_keywords") }}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.keywords && data.keywords.length > 0) {
+                // WordCloud2 options
+                WordCloud(document.getElementById('keywordCloud'), { 
+                    list: data.keywords,
+                    weightFactor: 8,
+                    fontFamily: 'Inter, sans-serif',
+                    color: function (word, weight, fontSize, distance, theta) {
+                        return weight > 10 ? '#ef4444' : (weight > 5 ? '#f59e0b' : '#3b82f6');
+                    },
+                    backgroundColor: 'transparent'
+                });
+            } else {
+                document.getElementById('keywordCloud').parentElement.innerHTML = '<div class="flex h-full items-center justify-center text-gray-400 italic">Not enough text data to extract keywords</div>';
+            }
+        });
+        
+    // Date Range Filter Logic
+    document.getElementById('applyDateFilter').addEventListener('click', function() {
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        const btn = this;
+        
+        if(!startDate && !endDate) return;
+        
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        
+        fetch(`{{ url_for("dashboard.get_dashboard_data") }}?start_date=${startDate}&end_date=${endDate}`)
+            .then(res => res.json())
+            .then(data => {
+                btn.innerHTML = '<i class="fa-solid fa-filter"></i> Apply';
+                if(data.success) {
+                    // Update Stat Cards (with basic rolling animation simulation)
+                    document.getElementById('statTotal').innerText = data.total_count;
+                    document.getElementById('statPos').innerText = data.positive;
+                    document.getElementById('statNeg').innerText = data.negative;
+                    document.getElementById('statNeu').innerText = data.neutral;
+                    
+                    document.getElementById('pctPos').innerText = data.pct_pos + '%';
+                    document.getElementById('pctNeg').innerText = data.pct_neg + '%';
+                    document.getElementById('pctNeu').innerText = data.pct_neu + '%';
+                    
+                    // Update Charts
+                    const pieChart = Chart.instances[0];
+                    if(pieChart) {
+                        pieChart.data.datasets[0].data = [data.positive, data.negative, data.neutral];
+                        pieChart.update();
+                    }
+                    
+                    const barChart = Chart.instances[1];
+                    if(barChart) {
+                        barChart.data.labels = data.dept_labels;
+                        barChart.data.datasets[0].data = data.dept_counts;
+                        barChart.update();
+                    }
+                }
+            })
+            .catch(err => {
+                btn.innerHTML = '<i class="fa-solid fa-filter"></i> Apply';
+                console.error("Date filter error:", err);
+            });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end animate-fade-in">
+    <div>
+        <h1 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Admin Dashboard</h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">System-wide sentiment overview and data management.</p>
+    </div>
+    </div>
+    <div class="mt-4 md:mt-0 flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 items-end">
+        <!-- Date Filter UI -->
+        <div class="flex items-center space-x-2 bg-white/20 dark:bg-gray-800/40 p-1.5 rounded-xl border border-white/20 dark:border-gray-700/50 backdrop-blur-md">
+            <input type="date" id="startDate" class="bg-transparent border-none text-xs text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer" title="Start Date">
+            <span class="text-gray-400 text-xs">to</span>
+            <input type="date" id="endDate" class="bg-transparent border-none text-xs text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer" title="End Date">
+            <button id="applyDateFilter" class="px-3 py-1.5 text-xs font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors shadow-sm">
+                <i class="fa-solid fa-filter"></i> Apply
+            </button>
+        </div>
+        
+        <div class="flex space-x-2">
+            <a href="{{ url_for('reports.download_excel') }}" class="px-4 py-2 text-sm font-semibold text-emerald-700 bg-emerald-100/80 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/30 rounded-xl transition-all shadow-sm hover:shadow" title="Export Excel">
+                <i class="fa-solid fa-file-excel"></i>
+            </a>
+            <a href="{{ url_for('reports.download_pdf') }}" class="px-4 py-2 text-sm font-semibold text-rose-700 bg-rose-100/80 hover:bg-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:hover:bg-rose-500/30 rounded-xl transition-all shadow-sm hover:shadow" title="Export PDF">
+                <i class="fa-solid fa-file-pdf"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Overview -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in animation-delay-100">
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+        <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <i class="fa-solid fa-database text-2xl"></i>
+            </div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Total Feedback</p>
+                <h3 id="statTotal" class="text-3xl font-bold text-gray-900 dark:text-white">{{ total_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+        <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <i class="fa-solid fa-face-smile text-2xl"></i>
+            </div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Positive</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statPos" class="text-3xl font-bold text-gray-900 dark:text-white">{{ positive }}</h3>
+                    <span id="pctPos" class="text-sm font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">{{ pct_pos }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+        <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                <i class="fa-solid fa-face-frown text-2xl"></i>
+            </div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Negative</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statNeg" class="text-3xl font-bold text-gray-900 dark:text-white">{{ negative }}</h3>
+                    <span id="pctNeg" class="text-sm font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-full">{{ pct_neg }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="glass rounded-2xl shadow-sm p-6 hover-card">
+        <div class="flex items-center">
+            <div class="p-4 rounded-xl bg-violet-500/10 text-violet-600 dark:text-violet-400">
+                <i class="fa-solid fa-face-meh text-2xl"></i>
+            </div>
+            <div class="ml-5">
+                <p class="mb-1 text-sm text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wider">Neutral</p>
+                <div class="flex items-baseline space-x-2">
+                    <h3 id="statNeu" class="text-3xl font-bold text-gray-900 dark:text-white">{{ neutral }}</h3>
+                    <span id="pctNeu" class="text-sm font-bold text-violet-500 bg-violet-500/10 px-2 py-0.5 rounded-full">{{ pct_neu }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 animate-fade-in animation-delay-200">
+    <div class="glass rounded-2xl shadow-sm p-6 lg:col-span-1 border border-white/20 dark:border-gray-700/50">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Sentiment Distribution</h3>
+        <div class="relative h-64">
+            {% if total_count > 0 %}
+            <canvas id="sentimentPieChart"></canvas>
+            {% else %}
+            <div class="flex h-full items-center justify-center text-gray-400 italic">No data available</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="glass rounded-2xl shadow-sm p-6 lg:col-span-2 border border-white/20 dark:border-gray-700/50">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 tracking-tight">Volume by Department</h3>
+        <div class="relative h-64">
+            {% if total_count > 0 %}
+            <canvas id="deptBarChart"></canvas>
+            {% else %}
+            <div class="flex h-full items-center justify-center text-gray-400 italic">No data available</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Keyword Cloud Row -->
+<div class="glass rounded-2xl shadow-sm p-6 mb-8 border border-white/20 dark:border-gray-700/50 animate-fade-in animation-delay-250">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white tracking-tight"><i class="fa-solid fa-cloud-word mr-2 text-indigo-500"></i>AI Trending Keywords</h3>
+        <span class="text-xs font-semibold px-2 py-1 bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg">Real-time Extraction</span>
+    </div>
+    <div class="relative h-64 w-full flex items-center justify-center overflow-hidden">
+        <canvas id="keywordCloud" class="w-full h-full"></canvas>
+    </div>
+</div>
+
+<!-- Recent Feedback Table -->
+<div class="glass rounded-2xl shadow-lg border border-white/20 dark:border-gray-700/50 overflow-hidden animate-fade-in animation-delay-300">
+    <div class="px-6 py-5 border-b border-gray-200/50 dark:border-gray-700/50 bg-white/30 dark:bg-gray-800/30 flex justify-between items-center backdrop-blur-md">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white tracking-tight">Recent Feedback</h3>
+    </div>
+    <div class="w-full overflow-x-auto">
+        <table id="recentFeedbackTable" class="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+            <thead class="text-xs text-gray-500 uppercase bg-black/5 dark:bg-white/5 dark:text-gray-400 tracking-wider">
+                <tr>
+                    <th scope="col" class="px-6 py-4 font-semibold">Submitted By</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Email</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Role</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Department</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Text Fragment</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Sentiment</th>
+                    <th scope="col" class="px-6 py-4 font-semibold">Score</th>
+                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Submitted On</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+                {% for item in recent_feedback %}
+                <tr class="hover:bg-black/5 dark:hover:bg-white/5 transition-colors duration-150">
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                        {% if item.author %}
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                                    {{ item.author.name[0] }}
+                                </div>
+                                {{ item.author.name }}
+                            </div>
+                        {% else %}
+                            <span class="text-gray-400 italic">System/CSV</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-xs text-gray-500 dark:text-gray-400">
+                        {% if item.author %}{{ item.author.email }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if item.author %}
+                            {% if item.author.role == 'Admin' %}
+                                <span class="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Admin</span>
+                            {% elif item.author.role == 'HOD' %}
+                                <span class="text-xs font-bold px-2 py-1 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">HOD</span>
+                            {% elif item.author.role == 'Staff' %}
+                                <span class="text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Staff</span>
+                            {% else %}
+                                <span class="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">Student</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-gray-400">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                        {{ item.department_category or 'N/A' }}
+                    </td>
+                    <td class="px-6 py-4 truncate max-w-xs text-gray-600 dark:text-gray-300" title="{{ item.original_text }}">
+                        {{ item.original_text[:50] }}{% if item.original_text|length > 50 %}...{% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {{ item.sentiment | sentiment_badge }}
+                    </td>
+                    <td class="px-6 py-4 font-mono text-xs">
+                        <span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-md">{{ "%.2f"|format(item.sentiment_score) }}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400">
+                        {{ item.created_at.strftime('%b %d, %Y %I:%M %p') }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-6 py-10 text-center text-gray-500 italic">
+                        No feedback entries found in the system yet.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
