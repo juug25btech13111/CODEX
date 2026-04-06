@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{% block title %}AI Sentiment Analysis{% endblock %}</title>
+    <!-- Tailwind CSS (via CDN for setup, preferably local build in prod) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                }
+            }
+        }
+        // Early dark mode script to prevent FOUC
+        if (localStorage.getItem('color-theme') === 'dark' || !('color-theme' in localStorage)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+    <script>
+        // Session security: Invalidate browser back/forward cache (bfcache)
+        // When a user clicks "Back" after logout, the browser may restore a cached
+        // page snapshot without making a server request. This detects that scenario
+        // and forces a full reload, which hits @login_required on the server.
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Load Three.js and Vanta.js globally for extreme aesthetic flow -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    {% if current_user.is_authenticated %}
+    <!-- Global Vanta.js Background Container. Use absolute positioning to fill screen without disrupting flow -->
+    <div id="vanta-bg" class="fixed inset-0 z-0 pointer-events-none opacity-40 dark:opacity-30 mix-blend-screen transition-opacity duration-1000"></div>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <!-- Sidebar Setup -->
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar absolute z-50 flex flex-col w-64 h-screen px-4 py-8 overflow-y-auto bg-white/50 glass border-r border-gray-200/50 -translate-x-full lg:relative lg:translate-x-0 dark:bg-gray-800/40 dark:border-gray-700/50 transition-all duration-300 ease-in-out shadow-2xl">
+            <div class="flex items-center justify-between mb-6">
+                <a href="{{ url_for('dashboard.index') }}" class="flex items-center space-x-2 text-2xl font-bold text-gradient tracking-tight">
+                    <i class="fa-solid fa-brain"></i>
+                    <span>NeuroSent</span>
+                </a>
+                <button class="sidebar-toggle-btn lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none transition-transform hover:scale-110">
+                    <i class="fa-solid fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center px-4 py-3 mb-6 bg-white/40 glass rounded-xl dark:bg-gray-800/40 shadow-sm hover:shadow-md transition-shadow">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-inner ring-2 ring-white/20">
+                        {{ current_user.name[0] }}
+                    </div>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ current_user.name }}</p>
+                    <p class="text-xs text-primary-600 dark:text-primary-400 font-medium">{{ current_user.role }}</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <a href="{{ url_for('dashboard.index') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'dashboard.index' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-chart-line w-5"></i>
+                    <span class="ml-3">Dashboard</span>
+                </a>
+
+                <a href="{{ url_for('profile.index') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'profile.index' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-user-circle w-5"></i>
+                    <span class="ml-3">My Profile</span>
+                </a>
+
+                {% if current_user.role == 'Admin' %}
+                <a href="{{ url_for('admin.create_user') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'admin.create_user' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-user-plus w-5"></i>
+                    <span class="ml-3">Create User</span>
+                </a>
+                
+                <a href="{{ url_for('admin.import_users') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'admin.import_users' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-file-import w-5"></i>
+                    <span class="ml-3">Import Users</span>
+                </a>
+
+                <a href="{{ url_for('admin.manage_users') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'admin.manage_users' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-users-gear w-5"></i>
+                    <span class="ml-3">Manage Users</span>
+                </a>
+                
+                <a href="{{ url_for('training.index') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if 'training' in request.endpoint %}bg-primary-50 text-indigo-600 dark:bg-gray-700 dark:text-indigo-400 font-bold{% endif %}">
+                    <i class="fa-solid fa-microchip w-5"></i>
+                    <span class="ml-3">AI Training Center</span>
+                </a>
+                
+                <a href="{{ url_for('admin.audit_log') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'admin.audit_log' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-clipboard-list w-5"></i>
+                    <span class="ml-3">Audit Log</span>
+                </a>
+                {% endif %}
+
+                {% if current_user.role in ['Admin', 'HOD'] %}
+                <a href="{{ url_for('auth.setup_mfa') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fa-solid fa-shield-halved w-5"></i>
+                    <span class="ml-3">{{ 'MFA Enabled ✓' if current_user.mfa_secret else 'Setup MFA' }}</span>
+                </a>
+                {% endif %}
+
+                {% if current_user.role in ['Admin', 'HOD', 'Staff'] %}
+                <a href="{{ url_for('upload.index') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'upload.index' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-cloud-upload-alt w-5"></i>
+                    <span class="ml-3">Upload Data</span>
+                </a>
+
+                <a href="{{ url_for('reports.download_csv') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400">
+                    <i class="fa-solid fa-file-csv w-5"></i>
+                    <span class="ml-3">Export CSV</span>
+                </a>
+                {% endif %}
+
+                <a href="{{ url_for('feedback.submit') }}" class="flex items-center px-4 py-2.5 text-sm font-medium transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-primary-600 dark:hover:text-primary-400 {% if request.endpoint == 'feedback.submit' %}bg-primary-50 text-primary-600 dark:bg-gray-700 dark:text-primary-400{% endif %}">
+                    <i class="fa-solid fa-pen-to-square w-5"></i>
+                    <span class="ml-3">Submit Feedback</span>
+                </a>
+            </nav>
+
+            <div class="mt-8 border-t border-gray-200/50 dark:border-gray-700/50 pt-4">
+                <button id="theme-toggle" type="button" class="w-full flex items-center px-4 py-2.5 text-sm font-medium transition-all duration-200 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-700/50 hover:pl-5">
+                    <i id="theme-toggle-dark-icon" class="fa-solid fa-moon w-5 hidden text-indigo-400"></i>
+                    <i id="theme-toggle-light-icon" class="fa-solid fa-sun w-5 hidden text-yellow-500"></i>
+                    <span class="ml-3">Toggle Theme</span>
+                </button>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="w-full">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <button type="submit" class="w-full flex items-center px-4 py-2.5 mt-2 text-sm font-medium text-red-600 transition-all duration-200 rounded-lg hover:bg-red-50/50 dark:hover:bg-red-900/20 dark:text-red-400 hover:pl-5">
+                        <i class="fa-solid fa-sign-out-alt w-5"></i>
+                        <span class="ml-3">Logout</span>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-transparent relative z-10">
+            <!-- Mobile Header -->
+            <header class="flex items-center justify-between px-6 py-4 glass border-b border-gray-200/50 lg:hidden shadow-sm">
+                <a href="{{ url_for('dashboard.index') }}" class="text-xl font-bold text-gradient">
+                    <i class="fa-solid fa-brain"></i> NeuroSent
+                </a>
+                <button class="sidebar-toggle-btn text-gray-500 focus:outline-none focus:text-gray-700 dark:text-gray-400 dark:focus:text-gray-200">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </header>
+
+            <div class="dashboard-container flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 animate-fade-in relative z-20">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-6 space-y-3 z-50">
+                        {% for category, message in messages %}
+                            <div class="alert-{{ category }} alert-auto-dismiss px-5 py-4 rounded-xl shadow-lg border-l-4 flex items-center justify-between animate-fade-in">
+                                <div><i class="fa-solid fa-circle-info mr-2 opacity-80"></i> {{ message }}</div>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <div class="animation-delay-100">
+                    {% block content %}{% endblock %}
+                </div>
+            </div>
+        </main>
+    </div>
+    {% else %}
+    <!-- No Sidebar for Unauthenticated Users -->
+    <div class="min-h-screen flex flex-col">
+        <div class="flex-1">
+            <!-- Flash Messages -->
+            <div class="absolute top-4 left-0 right-0 z-[100] max-w-md mx-auto px-4 pointer-events-none">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert-{{ category }} alert-auto-dismiss px-4 py-3 rounded-lg shadow-2xl mb-2 flex items-center pointer-events-auto border border-white/20 backdrop-blur-md">
+                            <i class="fa-solid fa-circle-info mr-2"></i> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            </div>
+
+            {% block unauth_content %}{% endblock %}
+        </div>
+        
+        <button id="theme-toggle" type="button" class="fixed bottom-4 right-4 p-3 rounded-full bg-white dark:bg-gray-800 shadow-lg text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 focus:outline-none transition-colors">
+            <i id="theme-toggle-dark-icon" class="fa-solid fa-moon text-xl hidden"></i>
+            <i id="theme-toggle-light-icon" class="fa-solid fa-sun text-xl hidden"></i>
+        </button>
+    </div>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        {% if current_user.is_authenticated %}
+        // Global Vanta.js Initialization for supreme aesthetics
+        document.addEventListener('DOMContentLoaded', () => {
+            const isDark = document.documentElement.classList.contains('dark');
+            const isMobile = window.innerWidth < 768;
+            
+            // Deeper blue for light mode network lines, brighter blue for dark mode
+            const vantaEffect = VANTA.NET({
+                el: "#vanta-bg",
+                mouseControls: true,
+                touchControls: true,
+                gyroControls: true,
+                minHeight: 200.00,
+                minWidth: 200.00,
+                scale: 1.00,
+                scaleMobile: 1.00,
+                color: isDark ? 0x60a5fa : 0x1d4ed8, // primary-400 (Dark) / primary-700 (Light)
+                backgroundColor: isDark ? 0x111827 : 0xf9fafb, // gray-900 / gray-50
+                points: isMobile ? 6.00 : 14.00, // Reduced points for 0 lag on phones
+                maxDistance: isMobile ? 18.00 : 24.00,
+                spacing: isMobile ? 25.00 : 16.00,
+                showDots: true
+            });
+
+            // Handle theme toggling seamlessly without reloading
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        const isDarkTheme = document.documentElement.classList.contains('dark');
+                        if (vantaEffect) {
+                            vantaEffect.setOptions({
+                                color: isDarkTheme ? 0x60a5fa : 0x1d4ed8,
+                                backgroundColor: isDarkTheme ? 0x111827 : 0xf9fafb
+                            });
+                        }
+                    }
+                });
+            });
+
+            observer.observe(document.documentElement, { attributes: true });
+        });
+        {% else %}
+        // Keep theme observer active for unauthenticated users (login screen text, etc)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup simple theme persistence watcher if needed
+        });
+        {% endif %}
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
